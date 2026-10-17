@@ -1,0 +1,32 @@
+[project]
+name = "inferd"
+version = "0.1.0"
+description = "LLM inference serving engine with its own prefill/decode loop, continuous batching, block-based KV-cache management, and pluggable scheduling policies."
+requires-python = "==3.13.*"
+dependencies = [
+    # Pinned exactly: the HF KV-cache API (DynamicCache internals) changes between versions.
+    "torch==2.11.0",
+    "transformers==5.20.1",
+    "matplotlib>=3.11.2",
+    "pandas>=3.0.6",
+    "pyyaml>=6.0.3",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+    "ruff>=0.17.1",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+
+[tool.ruff.lint]
+# E/W: style errors, F: real bugs (unused imports, undefined names), I: import order,
+# B: common bug patterns, UP: modern Python syntax.
+select = ["E", "W", "F", "I", "B", "UP"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]   # lets tests do `import serve` without installing the package

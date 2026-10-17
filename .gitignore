@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# Environment (rebuild with `uv sync`)
+.venv/
+
+# Tool caches
+.pytest_cache/
+.ruff_cache/
+
+# Experiment outputs (regenerated from code; plots come from these files)
+results/
+
+# OS / editor
+.DS_Store
+.vscode/
+.idea/
