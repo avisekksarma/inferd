@@ -1,6 +1,6 @@
 # Progress
 
-**Current step:** 0.3
+**Current step:** 1.1
 
 Claude Code: work only on the current step. When it's done, tick it, set "Current step" to the next
 one, and log any decisions or measured numbers below.
@@ -8,8 +8,8 @@ one, and log any decisions or measured numbers below.
 ## Steps
 - [x] 0.1 Environment
 - [x] 0.2 Skeleton
-- [ ] 0.3 Timing utility
-- [ ] 0.4 Reference fixture
+- [x] 0.3 Timing utility
+- [x] 0.4 Reference fixture
 - [ ] 1.1 Naive loop (no cache)
 - [ ] 1.2 Cached loop [You]
 - [ ] 1.3 Cache inspector
@@ -55,7 +55,14 @@ one, and log any decisions or measured numbers below.
 - 2026-10-17 — `git init -b main`.
 - 2026-10-17 — Project renamed mini-serve → **inferd** ("inference daemon"); package folder stays `serve/`. Framed as a general LLM serving engine (first milestone: batching / KV memory / scheduling), not a mini clone of an existing engine.
 - 2026-10-17 — Deleted `main.py` (unrelated FastAPI hello-world).
+- 2026-10-17 — `timed(device)` takes the device explicitly (sync only on MPS, so the same code works on CPU) and yields a `Timing` object whose `.seconds` is set on exit, even if the block raises. `warmup()` runs forward passes with `use_cache=False`, so it never touches KV-cache code (that stays in model_runner/batch_state).
+- 2026-10-17 — Fixture: 5 prompts of different lengths (1/5/11/7/18 tokens) so batched tests later must pad; generated one at a time (batch 1, no padding), fp32, on MPS. EOS ignored with `eos_token_id=None` (not `min_new_tokens`, which would *suppress* EOS and change the argmax; our loop just keeps going). Metadata (versions, device) stored in the JSON. Loaded in tests via the `gpt2_reference` fixture in `tests/conftest.py`.
+- 2026-10-17 — Added `scripts/` to the repo layout (wasn't in CLAUDE.md).
+- 2026-10-19 — Workflow: after Claude writes code (and may verify it), the author runs the terminal commands themselves (scripts, tests, experiments, plots, commits) to follow the flow. Added to CLAUDE.md.
+- 2026-10-19 — Commenting convention: docstring on every function (tests too) + short what/why comments on non-obvious logic only. Added to CLAUDE.md; applied to all existing code.
 
 ## Results log
 <!-- date — experiment — key numbers (e.g. "baseline: X tok/s on M4, GPT-2, fp16") -->
 - 2026-10-16 — env check — `torch.backends.mps.is_available()` == True; 1024×1024 matmul on MPS correct.
+- 2026-10-17 — MPS sync demo (20 chained 2048×2048 matmuls, warmed up): timer without sync ≈ 1.1–1.4 ms, with `timed()` ≈ 125–128 ms → unsynced timing under-reports by ~100×.
+- 2026-10-17 — Fixture check: GPT-2 generation_config has no extra processors (plain greedy); EOS never appears in the 5 outputs; CPU fp32 greedy == MPS fp32 greedy for all 5 prompts.

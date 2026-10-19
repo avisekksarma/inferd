@@ -31,6 +31,9 @@ Every step in `docs/PLAN.md` carries a label. Follow it strictly:
   explanation. If I explicitly say "I'm stuck, show me", show the smallest piece that unblocks me.
 
 General rules:
+- **I run the commands myself.** After you write code, you may run it to check it works, but then
+  give me the terminal commands to run myself (scripts, tests, experiments, plots, commits) so I
+  follow the flow: what to run, what to look for, and a prediction to make first.
 - **One step at a time.** Do only the current step in `docs/PROGRESS.md`. Don't build ahead, don't
   add features from later phases, don't "also refactor" unrelated files.
 - Before writing code for a step, state in 2–4 lines what you'll build and which files you'll touch.
@@ -108,7 +111,7 @@ loop:
 ## Conventions & gotchas
 
 - **Timing on MPS:** always call `torch.mps.synchronize()` before reading the clock (use
-  `serve/timing.py::timed()`), and warm up the model first. MPS is async; without the sync,
+  `with serve.timing.timed(device) as t:` → `t.seconds`), and warm up the model first. MPS is async; without the sync,
   timings are wrong.
 - **Batched decoder-only inputs:** left padding, explicit `attention_mask`, and explicit
   `position_ids = attention_mask.cumsum(-1) - 1` (pad positions masked). Missing `position_ids` is
@@ -124,6 +127,9 @@ loop:
 - KV bytes per token = `2 × n_layers × n_kv_heads × head_dim × bytes_per_elem`
   (n_kv_heads < n_heads for GQA models).
 - Use type hints and dataclasses. Keep functions small. Write a test with every module.
+- **Comments:** every function (tests included) gets a docstring saying what it does and why. Add a
+  short comment above any non-obvious block of logic (what it's doing and why). Don't comment the
+  obvious, e.g. simple assignments, loops or one-line helpers whose name already says it all.
 
 ---
 
@@ -137,7 +143,7 @@ inferd/
 ├── serve/
 │   ├── request.py        Request dataclass + State enum
 │   ├── clock.py          RealClock, VirtualClock
-│   ├── timing.py         timed() with MPS sync, warmup()
+│   ├── timing.py         sync(), timed(device) with MPS sync, warmup()
 │   ├── workload.py       trace generator (Poisson / bursty arrivals, length mixes, priorities)
 │   ├── model_runner.py   prefill/decode on the real model (only HF code here + batch_state)
 │   ├── batch_state.py    live batched KV cache: add / remove rows / trim padding
@@ -148,6 +154,7 @@ inferd/
 │   └── schedulers/       base.py, fcfs.py, sjf.py, priority.py, adaptive.py   [You]
 ├── experiments/     one script per experiment + YAML configs
 ├── analysis/        plots.py
+├── scripts/         one-off utilities (make_fixture.py: the only use of model.generate())
 ├── tests/           + tests/fixtures/
 └── results/         (gitignored)
 ```
@@ -157,4 +164,5 @@ inferd/
 - Install / rebuild env: `uv sync`
 - Run tests: `uv run pytest -q`
 - Lint: `uv run ruff check .`
+- Regenerate the GPT-2 reference fixture: `uv run python scripts/make_fixture.py`
 - (Add experiment commands here as they're created.)

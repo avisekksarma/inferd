@@ -22,7 +22,7 @@ Done when: `torch.backends.mps.is_available()` is True.
 **0.2 [AI] Skeleton.** The repo layout from CLAUDE.md, `.gitignore` (results/, venv, caches), ruff
 config, `pytest` passing on a smoke test, git init.
 
-**0.3 [AI] Timing utility.** `serve/timing.py`: `timed()` context manager that calls
+**0.3 [AI] Timing utility.** `serve/timing.py`: `timed(device)` context manager (yields `t.seconds`) that calls
 `torch.mps.synchronize()` before start and stop; `warmup(model, tokenizer, n=3)`.
 
 **0.4 [AI] Reference fixture.** `scripts/make_fixture.py`: load GPT-2 small, run greedy
@@ -89,6 +89,11 @@ Done when: each request's batched greedy output matches its solo output (fp32).
 - decode step time vs. context length at fixed batch size;
 - prefill time vs. prompt length.
 
+**Per-shape warmup (decide before coding this step):** MPS compiles kernels per tensor shape, so
+the first run at each batch size / prompt length is inflated (measured on toy layers: ~60 ms for the
+first few new shapes, ~4 ms extra after that; decode's growing KV length adds only ~0.05 ms). Do one
+untimed run per shape before timing it, and re-check these numbers on the real model.
+
 Save the raw numbers; Phase 6 calibrates from them.
 **Plot #2:** step time vs. batch size (flat, then bends).
 
@@ -98,6 +103,9 @@ still occupying the batch).
 
 **3.4 Compare to baseline** on the same trace: throughput, p50/p99 latency. Log the numbers in
 PROGRESS.md.
+**Shape warmup for real-model runs (decide before 3.4; also applies to 4.4 and 6.3):** the first
+prefill at a new prompt length pays extra compile time, which can inflate TTFT/p99. Options: warm
+every distinct prompt length in the trace, or replay the trace once untimed, then measure.
 
 **Checkpoint:** Why is static batching's waste worst on the bimodal workload? Why not just use
 smaller static batches?
