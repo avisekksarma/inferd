@@ -138,6 +138,7 @@ loop:
 ```
 inferd/
 ├── CLAUDE.md
+├── README.md         public overview: what inferd is, how LLM generation works, setup
 ├── pyproject.toml
 ├── docs/            PLAN.md, PROGRESS.md, notes, design rationale for the adaptive policy
 ├── serve/
@@ -145,7 +146,7 @@ inferd/
 │   ├── clock.py          RealClock, VirtualClock
 │   ├── timing.py         sync(), timed(device) with MPS sync, warmup()
 │   ├── workload.py       trace generator (Poisson / bursty arrivals, length mixes, priorities)
-│   ├── model_runner.py   prefill/decode on the real model (only HF code here + batch_state)
+│   ├── model_runner.py   load_model, naive_generate, prefill/decode (only HF code here + batch_state)
 │   ├── batch_state.py    live batched KV cache: add / remove rows / trim padding
 │   ├── sim_runner.py     cost-model runner with virtual clock
 │   ├── block_manager.py  [You] logical KV block allocator
@@ -156,7 +157,8 @@ inferd/
 ├── analysis/        plots.py
 ├── scripts/         one-off utilities (make_fixture.py: the only use of model.generate())
 ├── tests/           + tests/fixtures/
-└── results/         (gitignored)
+├── results/         (gitignored)
+└── inferd-play/     (gitignored) personal scratch experiments, not project code
 ```
 
 ## Commands

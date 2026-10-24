@@ -21,6 +21,7 @@ dev = [
 [tool.ruff]
 line-length = 100
 target-version = "py313"
+extend-exclude = ["inferd-play"]  # personal scratch folder, not project code
 
 [tool.ruff.lint]
 # E/W: style errors, F: real bugs (unused imports, undefined names), I: import order,

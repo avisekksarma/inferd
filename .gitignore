@@ -17,3 +17,6 @@ results/
 .DS_Store
 .vscode/
 .idea/
+
+# Personal scratch experiments (not part of the project)
+inferd-play/

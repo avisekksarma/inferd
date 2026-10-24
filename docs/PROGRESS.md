@@ -1,6 +1,6 @@
 # Progress
 
-**Current step:** 1.1
+**Current step:** 1.2
 
 Claude Code: work only on the current step. When it's done, tick it, set "Current step" to the next
 one, and log any decisions or measured numbers below.
@@ -10,7 +10,7 @@ one, and log any decisions or measured numbers below.
 - [x] 0.2 Skeleton
 - [x] 0.3 Timing utility
 - [x] 0.4 Reference fixture
-- [ ] 1.1 Naive loop (no cache)
+- [x] 1.1 Naive loop (no cache)
 - [ ] 1.2 Cached loop [You]
 - [ ] 1.3 Cache inspector
 - [ ] 1.4 Sequential baseline
@@ -60,6 +60,9 @@ one, and log any decisions or measured numbers below.
 - 2026-10-17 — Added `scripts/` to the repo layout (wasn't in CLAUDE.md).
 - 2026-10-19 — Workflow: after Claude writes code (and may verify it), the author runs the terminal commands themselves (scripts, tests, experiments, plots, commits) to follow the flow. Added to CLAUDE.md.
 - 2026-10-19 — Commenting convention: docstring on every function (tests too) + short what/why comments on non-obvious logic only. Added to CLAUDE.md; applied to all existing code.
+- 2026-10-19 — 1.1: `naive_generate()` + `load_model()` live in `serve/model_runner.py` (rule 2: all HF model calls there). Returns (tokens, per-step seconds). Tests get the model from a session-scoped `gpt2` fixture in `tests/conftest.py` (loaded once, ~5 s). All 5 prompts match the answer key exactly.
+- 2026-10-19 — `inferd-play/` = personal scratch folder inside the repo; ignored by git (`.gitignore`) and ruff (`extend-exclude`).
+- 2026-10-24 — Added `README.md` (public): project summary, the text-generation pipeline (8 steps with shapes, decoding strategies, KV cache, why own loop), setup, layout. More sections to be discussed later.
 
 ## Results log
 <!-- date — experiment — key numbers (e.g. "baseline: X tok/s on M4, GPT-2, fp16") -->

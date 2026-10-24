@@ -34,7 +34,7 @@ Done when: the fixture exists and a test loads it.
 
 ## Phase 1 — Own generation loop
 
-**1.1 [AI] Naive loop, no cache.** Each step feeds the whole sequence so far, takes argmax of the
+**1.1 [AI] Naive loop, no cache** (`serve/model_runner.py::naive_generate`, plus `load_model`). Each step feeds the whole sequence so far, takes argmax of the
 last logits, and appends it. Log the time of each step.
 Done when: the tokens match the fixture exactly for all 5 prompts.
 
