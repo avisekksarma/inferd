@@ -19,23 +19,20 @@ Full step-by-step plan: `docs/PLAN.md`. Current status: `docs/PROGRESS.md`. Read
 
 ## How to work with me (most important section)
 
-I delegate boilerplate, but the core logic must come from me.
-Every step in `docs/PLAN.md` carries a label. Follow it strictly:
-
-- **[AI]** — Boilerplate. You write it. Afterwards, explain each function in 1–2 lines and tell me
-  how to run the tests.
-- **[Pair]** — I sketch the logic (comments/pseudocode) first. If I haven't, ask me for my sketch
-  before writing code. Then implement it, and point out anywhere you deviated from my sketch and why.
-- **[You]** — I write the first version. **Do not write the implementation**, even if I ask casually.
-  You may: explain concepts, give hints, write tests, review my code, and point out bugs with an
-  explanation. If I explicitly say "I'm stuck, show me", show the smallest piece that unblocks me.
+**Current mode (since 2026-11-20): fast, "you code, I review".** The deadline is tight (target:
+about one week, doing as much of the plan as fits). You write all remaining code, including steps
+labelled [You] or [Pair]; the labels in `docs/PLAN.md` are kept only as history. For each phase:
+- implement it, test it, and give me a short "what & why" (no line-by-line teaching);
+- add the key design decisions and trade-offs to `docs/design_notes.md`, written so I can explain
+  and defend them (block manager, admission/preemption, scheduling policies, adaptive policy);
+- give me the few commands to run myself (tests, experiments, plots), then I commit.
 
 General rules:
-- **I run the commands myself.** After you write code, you may run it to check it works, but then
-  give me the terminal commands to run myself (scripts, tests, experiments, plots, commits) so I
-  follow the flow: what to run, what to look for, and a prediction to make first.
-- **One step at a time.** Do only the current step in `docs/PROGRESS.md`. Don't build ahead, don't
-  add features from later phases, don't "also refactor" unrelated files.
+- **I run the key commands myself** (tests, experiments, plots, commits). You may run things to
+  check they work; then hand me the commands, with what to look for.
+- **One phase at a time.** Work through `docs/PROGRESS.md` in order. Don't add features beyond the
+  plan, and don't "also refactor" unrelated files.
+- **Scope cuts if behind:** follow the cut order at the top of `docs/PLAN.md`.
 - Before writing code for a step, state in 2–4 lines what you'll build and which files you'll touch.
 - After a step: run the tests, update `docs/PROGRESS.md` (tick the step, log any decision or
   measured number), and ask me the step's checkpoint question from `docs/PLAN.md`.
@@ -140,7 +137,7 @@ inferd/
 ├── CLAUDE.md
 ├── README.md         public overview: what inferd is, how LLM generation works, setup
 ├── pyproject.toml
-├── docs/            PLAN.md, PROGRESS.md, notes, design rationale for the adaptive policy
+├── docs/            PLAN.md, PROGRESS.md, design_notes.md, pytorch_cheatsheet.md (ops + shapes)
 ├── serve/
 │   ├── request.py        Request dataclass + State enum
 │   ├── clock.py          RealClock, VirtualClock
@@ -151,13 +148,14 @@ inferd/
 │   ├── sim_runner.py     cost-model runner with virtual clock
 │   ├── block_manager.py  [You] logical KV block allocator
 │   ├── engine.py         the main loop
-│   ├── metrics.py
+│   ├── metrics.py        percentiles + run summary (TTFT, TPOT, e2e, throughput)
+│   ├── baseline.py       sequential one-at-a-time server (the 1× reference)
 │   └── schedulers/       base.py, fcfs.py, sjf.py, priority.py, adaptive.py   [You]
-├── experiments/     one script per experiment + YAML configs
-├── analysis/        plots.py
+├── experiments/     common.py (JSONL + git stamp), make_traces.py, one exp_*.py per experiment
+├── analysis/        plots.py (reads results/*.jsonl, writes results/plots/*.png)
 ├── scripts/         one-off utilities (make_fixture.py: the only use of model.generate())
 ├── tests/           + tests/fixtures/
-├── results/         (gitignored)
+├── results/         (gitignored) *.jsonl, traces/, plots/
 └── inferd-play/     (gitignored) personal scratch experiments, not project code
 ```
 
@@ -167,4 +165,8 @@ inferd/
 - Run tests: `uv run pytest -q`
 - Lint: `uv run ruff check .`
 - Regenerate the GPT-2 reference fixture: `uv run python scripts/make_fixture.py`
-- (Add experiment commands here as they're created.)
+- Experiments (run as modules from the repo root, so `serve` is importable):
+  - `uv run python -m experiments.make_traces` → results/traces/*.json
+  - `uv run python -m experiments.exp_cache_vs_naive` → Plot #1 data
+  - `uv run python -m experiments.exp_baseline <trace>` → sequential baseline
+  - `uv run python -m analysis.plots cache_vs_naive | trace <name>`

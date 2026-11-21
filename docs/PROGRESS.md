@@ -1,6 +1,6 @@
 # Progress
 
-**Current step:** 1.2
+**Current step:** 3.1
 
 Claude Code: work only on the current step. When it's done, tick it, set "Current step" to the next
 one, and log any decisions or measured numbers below.
@@ -11,12 +11,12 @@ one, and log any decisions or measured numbers below.
 - [x] 0.3 Timing utility
 - [x] 0.4 Reference fixture
 - [x] 1.1 Naive loop (no cache)
-- [ ] 1.2 Cached loop [You]
-- [ ] 1.3 Cache inspector
-- [ ] 1.4 Sequential baseline
-- [ ] 2.1 Request dataclass
-- [ ] 2.2 Trace generator
-- [ ] 2.3 Trace plots
+- [x] 1.2 Cached loop [You]
+- [x] 1.3 Cache inspector
+- [x] 1.4 Sequential baseline
+- [x] 2.1 Request dataclass
+- [x] 2.2 Trace generator
+- [x] 2.3 Trace plots
 - [ ] 3.1 Batched prefill/decode with padding
 - [ ] 3.2 Microbenchmark
 - [ ] 3.3 Static batching server
@@ -63,9 +63,19 @@ one, and log any decisions or measured numbers below.
 - 2026-10-19 — 1.1: `naive_generate()` + `load_model()` live in `serve/model_runner.py` (rule 2: all HF model calls there). Returns (tokens, per-step seconds). Tests get the model from a session-scoped `gpt2` fixture in `tests/conftest.py` (loaded once, ~5 s). All 5 prompts match the answer key exactly.
 - 2026-10-19 — `inferd-play/` = personal scratch folder inside the repo; ignored by git (`.gitignore`) and ruff (`extend-exclude`).
 - 2026-10-24 — Added `README.md` (public): project summary, the text-generation pipeline (8 steps with shapes, decoding strategies, KV cache, why own loop), setup, layout. More sections to be discussed later.
+- 2026-10-24 — 1.2 interface: `prefill(model, input_ids)`, `decode(model, token_ids, cache)`, `cached_generate(model, prompt_ids, max_new_tokens)` (model passed explicitly, matching `naive_generate`). Tests in `tests/test_cached_generate.py`; author wrote prefill/decode and most of cached_generate.
+
+- 2026-11-20 — **Fast mode**: Claude implements all remaining steps (incl. [You]/[Pair]); author reviews, runs key commands, commits. Design rationale goes to `docs/design_notes.md`. ~1 week target. Recorded in CLAUDE.md.
+- 2026-11-20 — `logits_to_keep=1` in naive loop and prefill: only the last position's logits are computed (full logits bloated the MPS cache to ~10 GiB → 4–6 s stalls). Prefill test now expects `[1, 1, vocab]`.
+- 2026-11-20 — Warmup policy for experiments: run the whole workload once untimed, then measure (handles per-shape kernel compilation).
+- 2026-11-20 — 1.4 built after Phase 2 so the baseline replays the same saved traces as every later system. Added `serve/clock.py` (needed for replay), minimal `serve/metrics.py` (extended in 8.1), `serve/baseline.py`, `experiments/common.py` (JSONL + git stamp), `experiments/make_traces.py`, `analysis/plots.py`. Traces live in `results/traces/` (regenerated from seed).
+- 2026-11-21 — Added `docs/pytorch_cheatsheet.md` (ops, model call contract, measured pipeline shapes) and a shape walkthrough in each phase hand-off — the author reads code shape-first.
 
 ## Results log
 <!-- date — experiment — key numbers (e.g. "baseline: X tok/s on M4, GPT-2, fp16") -->
 - 2026-10-16 — env check — `torch.backends.mps.is_available()` == True; 1024×1024 matmul on MPS correct.
+- 2026-11-20 — Plot #1 (GPT-2 fp32, prompt 64, 256 new tokens, warmed): naive 10→37 ms/step (total 6.0 s), cached ≈12–14 ms/step (total 3.6 s), identical tokens.
+- 2026-11-20 — KV bytes/token GPT-2: 73,728 (fp32), 36,864 (fp16); measured == formula.
+- 2026-11-20 — Sequential baseline: short_poisson (offered 56 tok/s) → 56.6 tok/s, TTFT p50 0.62 s / p99 1.89 s; bimodal_poisson (offered 93 tok/s, above capacity) → 68.5 tok/s, TTFT p50 10.9 s / p99 17.5 s. TPOT ≈13–14 ms.
 - 2026-10-17 — MPS sync demo (20 chained 2048×2048 matmuls, warmed up): timer without sync ≈ 1.1–1.4 ms, with `timed()` ≈ 125–128 ms → unsynced timing under-reports by ~100×.
 - 2026-10-17 — Fixture check: GPT-2 generation_config has no extra processors (plain greedy); EOS never appears in the 5 outputs; CPU fp32 greedy == MPS fp32 greedy for all 5 prompts.

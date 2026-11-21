@@ -4,8 +4,9 @@ Labels: **[You]** I write it first · **[Pair]** I sketch, AI implements · **[A
 Every step has a **Done when** (acceptance test). Every phase ends with **Checkpoint** questions
 I must be able to answer out loud before moving on.
 
-Approximate schedule: Day 3 → Phases 0+1 · Day 4 → 2 · Day 5 → 3 · Day 6 → 4 · Day 7 → 5 (+ start 6)
-· Day 8 → finish 6, then 7 · Day 9 → 8 · Day 10 → 9.
+Schedule (revised 2026-11-20, target ≈ 1 week; Claude implements, author reviews): Phase 1 + 2 →
+Phase 3 → Phase 4 → Phase 5 → Phase 6 → Phase 7 → Phases 8 + 9. Do as much as fits; cut per the
+order below.
 
 If behind schedule, cut in this order: (1) priority policy, (2) one workload mix, (3) one memory
 budget level, (4) the adaptive policy. **Never cut:** the baseline, the block manager, the
@@ -39,8 +40,10 @@ last logits, and appends it. Log the time of each step.
 Done when: the tokens match the fixture exactly for all 5 prompts.
 
 **1.2 [You] Cached loop.** In `serve/model_runner.py`:
-`prefill(input_ids) -> (logits, cache)` with `use_cache=True`, and
-`decode(token_ids, cache) -> (logits, cache)`, which feeds only the new token. About 15 lines.
+`prefill(model, input_ids) -> (logits, cache)` with `use_cache=True`,
+`decode(model, token_ids, cache) -> (logits, cache)`, which feeds only the new token, and
+`cached_generate(model, prompt_ids, max_new_tokens) -> (tokens, step_times)` (same contract as
+`naive_generate`; step 0 = prefill). About 15–25 lines. Tests: `tests/test_cached_generate.py`.
 Done when: the tokens are identical to 1.1 / the fixture.
 **Plot #1:** per-step latency vs. step index, cached vs. uncached.
 
@@ -48,7 +51,7 @@ Done when: the tokens are identical to 1.1 / the fixture.
 total bytes.
 Done when: measured bytes == `2 × n_layers × n_kv_heads × head_dim × bytes_per_elem × seq_len`.
 
-**1.4 [AI] Sequential baseline runner.** Serve a list of requests one at a time (fixed output
+**1.4 [AI] Sequential baseline runner** (built after Phase 2, so it replays saved traces; `serve/baseline.py`, `experiments/exp_baseline.py`). Serve a list of requests one at a time (fixed output
 lengths, ignore EOS). Record TTFT, total time, and tokens per request, and overall output tokens/sec.
 This is the 1× reference for all later comparisons.
 
