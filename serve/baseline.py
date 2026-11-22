@@ -1,4 +1,4 @@
-"""Step 1.4: the sequential baseline -- serve requests strictly one at a time, in arrival order.
+"""The sequential baseline -- serve requests strictly one at a time, in arrival order.
 
 This is the 1x reference every batching/scheduling result is compared against. It replays a
 trace in real time: if the next request hasn't arrived yet, the server idles until it does.

@@ -1,4 +1,4 @@
-"""Generate the named workload traces every experiment replays (step 2.2).
+"""Generate the named workload traces every experiment replays.
 
 Run:  uv run python -m experiments.make_traces
 Writes results/traces/<name>.json. Same names + seed always give identical traces.
@@ -10,7 +10,7 @@ from serve.workload import WorkloadConfig, generate_trace, save_trace
 TRACES_DIR = RESULTS_DIR / "traces"
 SEED = 0
 
-# A small fixed set; experiment sweeps (rate, budget) build on these in Phase 8.
+# A small fixed set; experiment sweeps (rate, budget) build on these.
 TRACES = {
     "short_poisson": WorkloadConfig(num_requests=60, arrival="poisson", rate=1.5,
                                     length_mix="short"),

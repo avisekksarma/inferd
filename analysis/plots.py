@@ -50,7 +50,7 @@ def plot_cache_vs_naive() -> None:
 
 
 def plot_trace(trace_name: str) -> None:
-    """Step 2.3: a trace's prompt/output length histograms and its arrival timeline."""
+    """A trace's prompt/output length histograms and its arrival timeline."""
     data = json.loads((RESULTS_DIR / "traces" / f"{trace_name}.json").read_text())
     reqs = pd.DataFrame(data["requests"])
     reqs["prompt_len"] = reqs["prompt_ids"].apply(len)

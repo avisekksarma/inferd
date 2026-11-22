@@ -1,8 +1,5 @@
-"""Tests for step 1.2: the KV-cached loop (prefill + decode) in serve/model_runner.py.
-
-We import the MODULE (not the three functions by name) and look each function up inside the test
-that uses it. So while a function is still missing, only the tests that need it fail; the rest
-run normally (and the naive-loop tests in test_model_runner.py are never affected).
+"""Tests for the KV-cached loop (prefill + decode) and KV-cache accounting in
+serve/model_runner.py.
 """
 
 import pytest
@@ -13,7 +10,7 @@ from serve import model_runner
 FRANCE_PROMPT = [464, 3139, 286, 4881, 318]  # "The capital of France is"
 
 
-# Same check as the naive loop: run once per prompt, compare against the answer key exactly.
+# Same check as the naive loop: run once per prompt, compare against the reference outputs exactly.
 @pytest.mark.parametrize("case_index", range(5))
 def test_cached_generate_matches_reference(
     gpt2: tuple, gpt2_reference: dict, case_index: int
@@ -68,7 +65,7 @@ def test_decode_feeds_one_token_and_grows_cache_by_one(gpt2: tuple) -> None:
 
 @pytest.mark.parametrize("dtype", [torch.float32, torch.float16])
 def test_measured_cache_bytes_match_formula(gpt2: tuple, dtype: torch.dtype) -> None:
-    """Step 1.3: bytes measured from the cache tensors == formula bytes/token x seq_len."""
+    """Bytes measured from the cache tensors == formula bytes/token x seq_len."""
     model, _ = gpt2
     device = next(model.parameters()).device
     model_cast = model.to(dtype)

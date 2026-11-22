@@ -56,7 +56,7 @@ def greedy_reference(model, tokenizer, prompt: str, device: torch.device) -> dic
 
 
 def main() -> None:
-    """Load GPT-2 (fp32), generate every prompt alone, and save the answer key as JSON."""
+    """Load GPT-2 (fp32), generate every prompt alone, and save the reference outputs as JSON."""
     device = get_device()
     tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
     model = AutoModelForCausalLM.from_pretrained(MODEL_NAME, dtype=torch.float32).to(device)

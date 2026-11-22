@@ -1,4 +1,4 @@
-"""Checks that the answer key (tests/fixtures/gpt2_greedy.json) is well formed."""
+"""Checks that the reference fixture (tests/fixtures/gpt2_greedy.json) is well formed."""
 
 GPT2_VOCAB_SIZE = 50257
 
@@ -21,6 +21,6 @@ def test_fixture_cases_are_well_formed(gpt2_reference: dict) -> None:
 
 
 def test_prompts_have_different_lengths(gpt2_reference: dict) -> None:
-    """Every prompt has a distinct length, so batched tests (step 3.1+) are forced to pad."""
+    """Every prompt has a distinct length, so batched tests are forced to pad."""
     lengths = [len(c["prompt_ids"]) for c in gpt2_reference["cases"]]
     assert len(set(lengths)) == len(lengths)  # a set drops duplicates; same size => all distinct

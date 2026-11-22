@@ -14,7 +14,7 @@ FIXTURES_DIR = Path(__file__).parent / "fixtures"
 
 @pytest.fixture(scope="session")
 def gpt2_reference() -> dict:
-    """The answer key made by scripts/make_fixture.py: prompts + their reference greedy outputs.
+    """Reference fixture from scripts/make_fixture.py: prompts + their reference greedy outputs.
 
     scope="session" -> the JSON is read once per test run and shared by every test that asks.
     """

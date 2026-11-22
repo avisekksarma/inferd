@@ -1,4 +1,4 @@
-"""Step 1.4: run the sequential baseline on a saved trace and record per-request metrics.
+"""Run the sequential baseline on a saved trace and record per-request metrics.
 
 Run:  uv run python -m experiments.exp_baseline [trace_name]     (default: short_poisson)
 Needs the traces first:  uv run python -m experiments.make_traces

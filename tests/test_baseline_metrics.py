@@ -1,4 +1,4 @@
-"""Tests for step 1.4 (sequential baseline) and the metric helpers."""
+"""Tests for the sequential baseline and the metric helpers."""
 
 import pytest
 

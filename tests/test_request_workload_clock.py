@@ -1,4 +1,4 @@
-"""Tests for Phase 2: Request lifecycle fields, trace generation/saving, and the clocks."""
+"""Tests for the Request lifecycle fields, trace generation/saving, and the clocks."""
 
 import pytest
 

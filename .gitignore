@@ -18,5 +18,11 @@ results/
 .vscode/
 .idea/
 
-# Personal scratch experiments (not part of the project)
+# Local scratch experiments (not part of the project)
 inferd-play/
+
+# Private working notes (kept locally, not published)
+CLAUDE.md
+docs/PLAN.md
+docs/PROGRESS.md
+docs/pytorch_cheatsheet.md

@@ -4,6 +4,8 @@
   step k recomputes all k previous tokens. The simplest correct loop; the slow reference.
 - `prefill()` / `decode()` / `cached_generate()`: generation WITH a KV cache. Prefill runs the
   prompt once and stores each layer's keys/values; each decode step then feeds one token.
+- `left_pad()` / `positions_from_mask()` / `batched_generate()`: several prompts in one forward
+  pass (static batch), left-padded, with attention_mask + position_ids so padding is invisible.
 - `kv_bytes_per_token()` / `inspect_cache()`: KV-cache memory accounting (formula vs. measured).
 """
 
@@ -125,6 +127,90 @@ def cached_generate(
     return generated, step_times
 
 
+def left_pad(
+    prompts: list[list[int]], device: torch.device, pad_id: int = 0
+) -> tuple[torch.Tensor, torch.Tensor]:
+    """Stack prompts of different lengths into one [B, T] batch, padding on the LEFT.
+
+    Returns (input_ids [B, T], attention_mask [B, T] with 1 = real token, 0 = padding).
+    Left padding makes every row END in the same column, so "the last position" (logits[:, -1])
+    is each row's real last token, and new tokens are appended in the same column for all rows.
+    pad_id's value doesn't matter: the mask hides those positions from attention.
+    """
+    max_len = max(len(p) for p in prompts)
+    ids = [[pad_id] * (max_len - len(p)) + p for p in prompts]
+    mask = [[0] * (max_len - len(p)) + [1] * len(p) for p in prompts]
+    return torch.tensor(ids, device=device), torch.tensor(mask, device=device)
+
+
+def positions_from_mask(attention_mask: torch.Tensor) -> torch.Tensor:
+    """Position id of every column: count real tokens so far, minus 1 -> [B, T].
+
+    Example row mask [0, 0, 1, 1, 1] -> cumsum [0, 0, 1, 2, 3] -> minus 1 -> [-1, -1, 0, 1, 2].
+    So each request's first REAL token is position 0, exactly as if it ran alone. Without this,
+    a padded prompt would start at position 2 and get different (wrong) outputs.
+    Pad columns get a dummy 0 (they are masked anyway; negatives would break the embedding lookup).
+    """
+    positions = attention_mask.cumsum(-1) - 1
+    return positions.clamp(min=0)
+
+
+@torch.no_grad()
+def batched_generate(
+    model: torch.nn.Module, prompts: list[list[int]], max_new_tokens: int
+) -> tuple[list[list[int]], list[float]]:
+    """Greedy-generate for several prompts at once (static batch): one forward pass per step.
+
+    Every request generates exactly `max_new_tokens` (fixed-length outputs). Returns
+    (generated ids per request, seconds per step). Correctness bar: each request's tokens equal
+    what cached_generate gives it alone.
+    """
+    device = next(model.parameters()).device
+    batch_size = len(prompts)
+    generated: list[list[int]] = [[] for _ in range(batch_size)]
+    step_times: list[float] = []
+
+    def record(logits: torch.Tensor) -> torch.Tensor:
+        """Greedy-pick one token per row, append it to each request's output, return it [B]."""
+        # logits [B, 1, V] -> last position [B, V] -> best token per row [B]
+        next_tokens = logits[:, -1].argmax(-1)
+        for row, token in enumerate(next_tokens.tolist()):  # one GPU->CPU copy for the batch
+            generated[row].append(token)
+        return next_tokens
+
+    # Step 0 -- prefill: all padded prompts in one pass. Mask + positions make padding invisible.
+    input_ids, attention_mask = left_pad(prompts, device)  # both [B, T]
+    with timed(device) as t:
+        out = model(
+            input_ids=input_ids,  # [B, T]
+            attention_mask=attention_mask,  # [B, T]
+            position_ids=positions_from_mask(attention_mask),  # [B, T]
+            use_cache=True,
+            logits_to_keep=1,
+        )
+        cache = out.past_key_values
+        next_tokens = record(out.logits)
+    step_times.append(t.seconds)
+
+    # Steps 1..N-1 -- decode: one new token per row, added as a new (real) column of the mask.
+    ones = torch.ones((batch_size, 1), dtype=attention_mask.dtype, device=device)
+    for _ in range(max_new_tokens - 1):
+        with timed(device) as t:
+            attention_mask = torch.cat([attention_mask, ones], dim=1)  # [B, S] -> [B, S+1]
+            out = model(
+                input_ids=next_tokens[:, None],  # [B] -> [B, 1]
+                attention_mask=attention_mask,  # covers every cached token + the new one
+                position_ids=positions_from_mask(attention_mask)[:, -1:],  # last column [B, 1]
+                past_key_values=cache,
+                use_cache=True,
+            )
+            cache = out.past_key_values
+            next_tokens = record(out.logits)
+        step_times.append(t.seconds)
+
+    return generated, step_times
+
+
 def kv_bytes_per_token(config, dtype: torch.dtype) -> int:
     """KV-cache bytes one token costs: 2 (K and V) x layers x kv_heads x head_dim x bytes/element.
 
@@ -140,7 +226,7 @@ def kv_bytes_per_token(config, dtype: torch.dtype) -> int:
 
 @dataclass
 class CacheInfo:
-    """What a KV cache holds right now (step 1.3)."""
+    """What a KV cache holds right now."""
 
     num_layers: int
     key_shape: tuple[int, ...]  # layer 0 keys: [batch, kv_heads, seq_len, head_dim]

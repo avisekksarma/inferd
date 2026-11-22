@@ -1,4 +1,4 @@
-"""Tests for serve/model_runner.py: our own generation loops must match the answer key exactly."""
+"""Tests for serve/model_runner.py: generation loops must match the reference outputs exactly."""
 
 import pytest
 

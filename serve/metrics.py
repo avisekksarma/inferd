@@ -1,6 +1,7 @@
 """Latency/throughput summaries over finished requests. Pure Python (no torch).
 
-Kept minimal here (step 1.4); extended with starvation and memory metrics in step 8.1.
+Covers the core latency metrics; starvation and memory metrics are added with the scheduler
+experiments.
 """
 
 from serve.request import Request
